@@ -22,9 +22,14 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     // 4. Attach the user data from the token to the request object
-    req.user = user;
+    if (typeof user !== 'string' && user !== undefined) {
+      req.user = user as JwtPayload;
+    }
 
     // 5. Proceed to the next middleware or route handler
     next();
+    return;
   });
+
+  return;
 };
