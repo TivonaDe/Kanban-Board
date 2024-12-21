@@ -27,10 +27,10 @@ export const login = async (req: Request, res: Response) => {
     );
 
     // 4. Return the token in the response
-    res.json({ token });
+    return res.json({ token });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
