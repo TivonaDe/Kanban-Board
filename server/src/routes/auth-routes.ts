@@ -2,41 +2,48 @@ import { Router, Request, Response } from 'express';
 import { User } from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import authRoutes from './auth-routes'; // Add this line to import authRoutes
+import { authenticateToken } from '../middleware/auth.js';
+import apiRoutes from './index.js'; // Add this line to import apiRoutes
 
 export const login = async (req: Request, res: Response) => {
+  // TODO: If the user exists and the password is correct, return a JWT token
+  // Extract username and password from the request body
   const { username, password } = req.body;
 
-  try {
-    // 1. Check if the user exists in the database
-    const user = await User.findOne({ where: { username } });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+  // Find the user in the database by username
+  const user = await User.findOne({
+    where: { username },
+  });
 
-    // 2. Verify the password using bcrypt
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // 3. Generate a JWT token
-    const token = jwt.sign(
-      { userId: user.id, username: user.username }, // Payload (you can add other info as needed)
-      process.env.JWT_SECRET as string, // Secret key for signing the JWT
-      { expiresIn: '1h' } // Optional: Set an expiration time for the token
-    );
-
-    // 4. Return the token in the response
-    return res.json({ token });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+  // If the user is not found, send an authentication failed response
+  if (!user) {
+    return res.status(401).json({ message: 'Authentication failed' });
   }
+
+  // Compare the provided password with the stored hashed password
+  const passwordIsValid = await bcrypt.compare(password, user.password);
+
+  // If the password is invalid, send an authentication failed response
+  if (!passwordIsValid) {
+    res.status(401).json({ message: 'Authentication failed' });
+  }
+
+  // Get the secret key from the environment vairables
+  const secretKey = process.env.JWT_SECRET_KEY || '';
+
+  // Generate a JWT token for the authentiated user
+  const token = jwt.sign({ username }, secretKey, { expiresIn: '1h' });
+
+  // Send the token as a JSON response
+  return res.json({ token });
 };
 
 const router = Router();
 
 // POST /login - Login a user
-router.post('/login', login);
+router.use('/auth', authRoutes);
+router.use('/api', authenticateToken as any, apiRoutes);
+
 
 export default router;

@@ -11,14 +11,14 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   // 2. If no token exists, respond with a 401 Unauthorized status
   if (!token) {
-    return res.status(401).json({ message: 'Access Denied: No Token Provided' });
+    return res.sendStatus(401);
   }
 
   // 3. Verify the token using the secret key
   jwt.verify(token, process.env.JWT_SECRET as string, (err, user) => {
     if (err) {
       // If token is invalid or expired, respond with a 403 Forbidden status
-      return res.status(403).json({ message: 'Invalid Token' });
+      return res.sendStatus(403);
     }
 
     // 4. Attach the user data from the token to the request object
@@ -27,9 +27,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     // 5. Proceed to the next middleware or route handler
-    next();
-    return;
+    return next();
+   
   });
 
-  return;
+  return res.sendStatus(401)
 };
